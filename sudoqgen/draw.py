@@ -5,6 +5,8 @@ from glob import glob
 import cv2
 import numpy as np
 
+from . import utils
+
 fonts = [
     cv2.FONT_HERSHEY_SIMPLEX,
     cv2.FONT_HERSHEY_PLAIN,
@@ -19,9 +21,7 @@ fonts = [
 
 def get_optimal_font_scale(text, width, font):
     for scale in reversed(range(0, 60, 1)):
-        textSize = cv2.getTextSize(
-            text, fontFace=font, fontScale=scale / 10, thickness=1
-        )
+        textSize = cv2.getTextSize(text, fontFace=font, fontScale=scale / 10, thickness=1)
         new_width = textSize[0][0]
         if new_width <= width:
             return scale / 10
@@ -103,9 +103,7 @@ def draw(
                 int(xpos + (((1 - rdm_text_scale) / 2 + 0.1) * cell_w) + i * cell_w),
                 int(ypos + ((0.9 - (1 - rdm_text_scale) / 2) * cell_h) + j * cell_h),
             )
-            font_scale = (
-                get_optimal_font_scale(text, cell_w, font) * 0.8 * rdm_text_scale
-            )
+            font_scale = get_optimal_font_scale(text, cell_w, font) * 0.8 * rdm_text_scale
 
             image = cv2.putText(
                 image,
@@ -119,14 +117,10 @@ def draw(
             )
 
     translation = np.array([[1, 0, xpos], [0, 1, ypos], [0, 0, 1]])
-    scale = np.array([[grid_w, 0, 0], [0, grid_h, 0], [0, 0, 1]])
+    scale = np.array([[cell_w, 0, 0], [0, cell_h, 0], [0, 0, 1]])
     rotation = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
     data["transform-matrix"] = translation @ scale @ rotation
-
-    data["top-left"] = data["transform-matrix"] @ np.array([0, 0, 1])
-    data["top-right"] = data["transform-matrix"] @ np.array([1, 0, 1])
-    data["bottom-left"] = data["transform-matrix"] @ np.array([0, 1, 1])
-    data["bottom-right"] = data["transform-matrix"] @ np.array([1, 1, 1])
+    utils.create_grid_array(data)
 
     data["image"] = image
     return data
@@ -138,9 +132,7 @@ def apply_background_image(image_data, texture_folder, mask_values=[255, 255, 25
         textures_path = glob(os.path.join(texture_folder, "*"))
         rdm_texture_path = np.random.choice(textures_path)
         back = cv2.imread(rdm_texture_path)
-        back = cv2.resize(
-            back, (image_data["image"].shape[1], image_data["image"].shape[0])
-        )
+        back = cv2.resize(back, (image_data["image"].shape[1], image_data["image"].shape[0]))
     else:
         back = np.random.randint(0, 255, image_data["image"].shape, dtype=np.uint8)
 

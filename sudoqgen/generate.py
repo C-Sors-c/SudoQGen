@@ -1,6 +1,7 @@
 import numpy as np
 import random
 
+
 def pattern(r, c, base, side):
     return (base * (r % base) + r // base + c) % side
 

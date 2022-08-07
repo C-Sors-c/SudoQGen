@@ -3,6 +3,8 @@ import math
 import cv2
 import numpy as np
 
+from . import utils
+
 
 def get_function_by_name(name: str):
     """Get the function by name.
@@ -20,9 +22,7 @@ class Functions:
     """Class containing every augmentation functions"""
 
     def bgr2gray(image_data: dict):
-        image_data["image"] = cv2.cvtColor(
-            cv2.cvtColor(image_data["image"], cv2.COLOR_BGR2GRAY), cv2.COLOR_GRAY2BGR
-        )
+        image_data["image"] = cv2.cvtColor(cv2.cvtColor(image_data["image"], cv2.COLOR_BGR2GRAY), cv2.COLOR_GRAY2BGR)
 
     def blur(image_data: dict):
         image_data["image"] = cv2.blur(image_data["image"], (3, 3))
@@ -30,9 +30,7 @@ class Functions:
     def noise(image_data: dict):
         scale = 25
         noise = np.random.randint(-scale, scale, size=image_data["image"].shape)
-        image_data["image"] = (
-            image_data["image"] + (image_data["image"] < 255 - scale) * noise
-        )
+        image_data["image"] = image_data["image"] + (image_data["image"] < 255 - scale) * noise
 
     def random_lines(image_data: dict):
         n_lines = np.random.randint(2, 4)
@@ -72,7 +70,7 @@ class Functions:
         az = float(z * (math.pi / 180.0))
 
         trans = np.eye(4)
-        trans[2, 3] = height
+        trans[2, 3] = height * 1.5
 
         proj3dto2d = np.array(
             [
@@ -112,25 +110,23 @@ class Functions:
         rz[1, 1] = math.cos(az)
 
         rot = rx.dot(ry).dot(rz)
-        final = proj3dto2d.dot(trans.dot(rot.dot(proj2dto3d)))
+        final = proj3dto2d.dot(trans.dot(rot.dot(proj2dto3d))) / max(width, height)
 
-        image_data["image"] = cv2.warpPerspective(
-            image_data["image"],
-            final,
-            (width, height),
-            None,
-            cv2.INTER_LINEAR,
-            cv2.BORDER_CONSTANT,
-            (255, 255, 255),
-        )
+        utils.warpPerspective(image_data, final, dst_shape=(height, width, 3))
 
-        # update the coordinates of the sudoku grid
-        # image_data["transform-matrix"] = (final/1024) @ (image_data["transform-matrix"])
+        # image_data["image"] = cv2.warpPerspective(
+        #     image_data["image"],
+        #     final,
+        #     (width, height),
+        #     None,
+        #     cv2.INTER_LINEAR,
+        #     cv2.BORDER_CONSTANT,
+        #     (255, 255, 255),
+        # )
 
-        # image_data["top-left"] = image_data["transform-matrix"] @ np.array([0, 0, 1])
-        # image_data["top-right"] = image_data["transform-matrix"] @ np.array([1, 0, 1])
-        # image_data["bottom-left"] = image_data["transform-matrix"] @ np.array([0, 1, 1])
-        # image_data["bottom-right"] = image_data["transform-matrix"] @ np.array([1, 1, 1])
+        # update the transform matrix
+        image_data["transform-matrix"] = final @ image_data["transform-matrix"]
+        utils.create_grid_array(image_data)
 
 
 class Augmentation:

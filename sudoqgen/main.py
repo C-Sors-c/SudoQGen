@@ -30,6 +30,7 @@ def main(num_gen, image_size, sudoku_size):
         )
         # rotate the generated sudoQ grid
         augmentation.Functions.rotate(image_data)
+
         # fill in the white gaps with a random texture
         draw.apply_background_image(image_data, texture_folder)
 
