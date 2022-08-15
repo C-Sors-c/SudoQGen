@@ -96,26 +96,41 @@ def create_grid_array(image_data):
             image_data["grid"][x, y, :] = p1
 
 
-def warpPerspective(image_data, transform_matrix, dst_shape=(1024, 1024, 3)):
+def transpose(matrix):
+    """Transpose a matrix.
+
+    Args:
+        matrix (np.array): the matrix to be transposed.
+    """
+    transposed = np.zeros((matrix.shape[1], matrix.shape[0]))
+    for i in range(matrix.shape[0]):
+        for j in range(matrix.shape[1]):
+            transposed[j, i] = matrix[i, j]
+    return transposed
+
+
+def warpPerspective(image_data, inv_transform_matrix, dst_shape=(1024, 1024, 3)):
     """Warp perspective function from "scratch".
 
     Args:
         image_data (dict): Image data dictionary.
-        transform_matrix (np.array): Transform matrix.
+        inv_transform_matrix (np.array): inverse of the transform matrix (dst -> src).
         dst_shape (tuple, optional): Destination image shape. Defaults to (1024, 1024, 3).
     """
+    # knowned issues with dst_shape not centering the image,
+    # will need to fix that in the projection / normalization matrix step.
+
     image = image_data["image"]
 
     height, width, _ = image.shape
-    dst = np.full(image.shape, 0, dtype=np.uint8)
-    dst_resized = np.full(dst_shape, 0, dtype=np.uint8)
+    dst = np.full(dst_shape, 0, dtype=np.uint8)
 
-    for i in range(height):
-        for j in range(width):
-            trans_p = transform_matrix @ np.array([i, j, 1])
-            x, y, _ = trans_p / trans_p[2]
+    for y in range(dst_shape[0]):
+        for x in range(dst_shape[1]):
+            p = inv_transform_matrix @ np.array([x, y, 1])
+            p /= p[2]
 
-            if 0 < x < dst.shape[0] - 1 and 0 < y < dst.shape[1] - 1:
-                dst[round(x), round(y), :] = image[i, j]
+            if 0 <= p[0] < width - 1 and 0 <= p[1] < height - 1:
+                dst[y, x, :] = image[round(p[1]), round(p[0]), :]
 
     image_data["image"] = dst

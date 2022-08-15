@@ -19,3 +19,7 @@ pip install -e .[dev]
 ```
 
 ## Examples
+run a simple example generating images using:
+```bash
+python -m "sudoqgen.main"
+```

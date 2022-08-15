@@ -58,7 +58,7 @@ class Functions:
                 cv2.LINE_AA,
             )
 
-    def rotate(image_data: dict):
+    def rotate(image_data: dict, depth=1.25):
         height, width, _ = image_data["image"].shape
 
         x = np.random.randint(-30, 30)
@@ -70,23 +70,28 @@ class Functions:
         az = float(z * (math.pi / 180.0))
 
         trans = np.eye(4)
-        trans[2, 3] = height * 1.5
+        trans[2, 3] = depth
 
-        proj3dto2d = np.array(
+        inv_trans = np.eye(4)
+        inv_trans[2, 3] = 1 / depth
+
+        # projection + normalization to [-1, 1]
+        proj2dto3d = np.array(
             [
-                [height, 0, width / 2, 0],
-                [0, height, height / 2, 0],
-                [0, 0, 1, 0],
+                [1 / width, 0, -1 / 2],
+                [0, 1 / height, -1 / 2],
+                [0, 0, 0],
+                [0, 0, 1],
             ],
             np.float32,
         )
 
-        proj2dto3d = np.array(
+        # projection + normalization to [0, width || height]
+        proj3dto2d = np.array(
             [
-                [1, 0, -width / 2],
-                [0, 1, -height / 2],
-                [0, 0, 0],
-                [0, 0, 1],
+                [width, 0, width / 2, 0],
+                [0, height, height / 2, 0],
+                [0, 0, 1, 0],
             ],
             np.float32,
         )
@@ -110,19 +115,17 @@ class Functions:
         rz[1, 1] = math.cos(az)
 
         rot = rx.dot(ry).dot(rz)
-        final = proj3dto2d.dot(trans.dot(rot.dot(proj2dto3d))) / max(width, height)
+        inv_rot = utils.transpose(rot)
 
-        utils.warpPerspective(image_data, final, dst_shape=(height, width, 3))
+        final = proj3dto2d @ trans @ rot @ proj2dto3d
 
-        # image_data["image"] = cv2.warpPerspective(
-        #     image_data["image"],
-        #     final,
-        #     (width, height),
-        #     None,
-        #     cv2.INTER_LINEAR,
-        #     cv2.BORDER_CONSTANT,
-        #     (255, 255, 255),
-        # )
+        # calculate the inverse matrix of final rotations
+        # we will need to do that from scratch but since we have rotation matrix, it should be fine
+        inv_final = np.linalg.inv(final)
+
+        # inv_final = proj3dto2d @ inv_rot @ inv_trans @ proj2dto3d #not working for the moment
+
+        utils.warpPerspective(image_data, inv_final, dst_shape=(height, width, 3))
 
         # update the transform matrix
         image_data["transform-matrix"] = final @ image_data["transform-matrix"]
