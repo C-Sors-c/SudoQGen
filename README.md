@@ -3,17 +3,24 @@ A Sudoku image generator
 
 
 ## Setup
-create a virtual env (you need to specify the path to your python3.6:
+
+create a virtual env:
 ```bash
 virtualenv --python C:\Path\To\Python\python.exe venv
 ```
-Then, every time you will be working on the project, you will need to activate this environment,
-to do so:
+
+Activate the environment:
+* Windows
 ```bash
 .\venv\Scripts\activate
 ```
 
-Now, to install autopylot and its requirements (including dev requirements):
+* Linux
+```bash
+source venv/bin/activate
+```
+
+isntall the requirements:
 ```bash
 pip install -e .[dev]
 ```

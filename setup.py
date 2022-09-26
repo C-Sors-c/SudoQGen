@@ -15,7 +15,6 @@ setup(
         "tqdm",
     ],
     extra_require={
-        "dev": ["pytest", "flake8", "black", "pre-commit"],
-        "test": ["pytest", "flake8"],
+        "dev": ["flake8", "black", "pre-commit"]
     },
 )
